@@ -87,4 +87,4 @@ class VelocityMap:
         sigma_arcsec = self.fwhm_arcsec * gaussian_fwhm_to_sigma
         sigma_pixels = sigma_arcsec / self.pixel_scale_arcsec
         im = gaussian_filter(self.data.data * self.data.mask, sigma=sigma_pixels)
-        return im
+        return np.ma.masked_array(im, mask=~self.data.mask)

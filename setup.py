@@ -5,7 +5,8 @@ install_requires = [
     'scipy >= 1.5.2',
     'matplotlib >= 3.0.0',
     'astropy >= 4.0.0',
-    'pynbody >= 1.0.2'
+    'pynbody >= 1.0.2',
+    'pafit >= 2.0.7'
     ]
 
 tests_require = []
