@@ -47,11 +47,28 @@ class VelocityMap:
             self.data = self.convolve_fwhm()
 
     def calc_npixels(self, image_width_kpc, pixel_scale_arcsec):
+        """Converts image width and pixel scale to an image width in pixels.
+
+        Args:
+            image_width_kpc (float): Desired image width in kpc units.
+            pixel_scale_arcsec (float): Desired pixel scale in arcsec.
+
+        Returns:
+            int: Image width in pixels.
+        """
         image_width_arcsec = image_width_kpc / self.kpc_per_arcsec
         npixels = int(image_width_arcsec / pixel_scale_arcsec)
         return npixels
 
     def restrict_to_aperture(self, halo):
+        """Restricts halo to a 3d radius from the center.
+
+        Args:
+            halo (pynbody.snapshot.SimSnap): Pynbody halo object.
+
+        Returns:
+            pynbody.snapshot.SimSnap: Cropped halo object.
+        """
         if self.aperture_radius is not None:
             inside_aperture = pynbody.filt.Sphere(self.aperture_radius, cen=(0,0,0))
             return halo[inside_aperture]
@@ -59,6 +76,11 @@ class VelocityMap:
             return halo
 
     def mask_aperture(self):
+        """Mask data outside the aperture.
+
+        Returns:
+            array-like: Boolean mask marking pixels within the aperture.
+        """
         w, h = self.data.shape
         center = (int(w / 2), int(h / 2))
         radius = self.aperture_radius / self.kpc_per_arcsec / self.pixel_scale_arcsec
@@ -70,6 +92,11 @@ class VelocityMap:
         return mask
 
     def generate_los_map(self):
+        """Creates line-of-sight velocity map from self.particles.
+
+        Returns:
+            array-like: pixel-by-pixel velocity map
+        """
         im = pynbody.plot.sph.image(
             self.particles,
             qty="vz",
@@ -84,6 +111,11 @@ class VelocityMap:
         return np.ma.masked_array(im)
 
     def convolve_fwhm(self):
+        """Convolve a observational PSF with full width half max of self.fwhm_arcsec.
+
+        Returns:
+            array-like: Masked numpy array containing the image, as well as the mask outlining the aperture.
+        """
         sigma_arcsec = self.fwhm_arcsec * gaussian_fwhm_to_sigma
         sigma_pixels = sigma_arcsec / self.pixel_scale_arcsec
         im = gaussian_filter(self.data.data * self.data.mask, sigma=sigma_pixels)

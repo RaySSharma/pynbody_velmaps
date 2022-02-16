@@ -2,6 +2,15 @@ import pynbody
 
 
 def load_halo_families(filename, orientation="sideon"):
+    """Load all particles families from the halo.
+
+    Args:
+        filename (str): Full path to simulation file.
+        orientation (str, optional): Orientation of halo, feeds into pynbody. Defaults to "sideon".
+
+    Returns:
+        dict: Dictionary containing particles families.
+    """
     halo = pynbody.load(filename)
     halo.physical_units()
     rotate = {
