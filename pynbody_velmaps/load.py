@@ -2,7 +2,7 @@ import pynbody
 
 
 def load_halo_families(filename, orientation="sideon"):
-    halo = pynbody.load(filename.as_posix())
+    halo = pynbody.load(filename)
     halo.physical_units()
     rotate = {
         "sideon": pynbody.analysis.angmom.sideon,

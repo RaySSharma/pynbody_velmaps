@@ -1,6 +1,5 @@
 import argparse
 import pathlib
-import sys
 
 import numpy as np
 import pynbody
@@ -55,7 +54,7 @@ def plot_star_map(filename, redshift, image_width=20, orientation="sideon", ax=N
         pixel_scale_arcsec=0.5,
         fwhm_arcsec=2.5,
     )
-    plot.plot_map(
+    ax = plot.plot_map(
         vel_map,
         cmap="PuOr",
         vmin=None,
@@ -82,7 +81,7 @@ def plot_gas_map(filename, redshift, image_width=20, orientation="sideon", ax=No
         pixel_scale_arcsec=0.5,
         fwhm_arcsec=2.5,
     )
-    plot.plot_map(
+    ax = plot.plot_map(
         vel_map,
         cmap="RdBu",
         vmin=None,
@@ -97,7 +96,7 @@ def plot_gas_map(filename, redshift, image_width=20, orientation="sideon", ax=No
 
 if __name__ == "__main__":
     args = parse_args()
-    filename = args.simulation
+    filename = args.simulation.as_posix()
     out_filename = args.outfile
     if args.redshift == 0:
         redshift = 0.03
@@ -113,11 +112,8 @@ if __name__ == "__main__":
         filename, redshift, image_width, orientation="sideon", ax=ax[1]
     )
 
-    star_map = star_map.data.data * star_map.data.mask
-    gas_map = gas_map.data.data * gas_map.data.mask
-
-    star_pa = position_angles.calc_pa(star_map)
-    gas_pa = position_angles.calc_pa(gas_map)
+    star_pa = position_angles.calc_pa(star_map.data.data * star_map.data.mask)
+    gas_pa = position_angles.calc_pa(gas_map.data.data * gas_map.data.mask)
 
     plot.plot_pa(star_map, star_pa, ax[0])
     plot.plot_pa(gas_map, gas_pa, ax[1])
