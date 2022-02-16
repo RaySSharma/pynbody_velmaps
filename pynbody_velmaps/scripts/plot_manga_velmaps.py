@@ -95,6 +95,8 @@ def plot_gas_map(filename, redshift, image_width=20, orientation="sideon", ax=No
 
 
 if __name__ == "__main__":
+    """ Example usage: >python plot_manga_velmaps.py /path/to/simulation.tipsy 0.05 20 /path/to/output/image.png
+    """
     args = parse_args()
     filename = args.simulation.as_posix()
     out_filename = args.outfile
