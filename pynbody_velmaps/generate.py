@@ -40,9 +40,10 @@ class VelocityMap:
         self.kpc_per_pixel = self.image_width_kpc / self.npixels
 
         self.particles = self.restrict_to_aperture(halo)
-
-        self.data = self.generate_los_map()
-        self.data.mask = self.mask_aperture()
+        self.mask = self.mask_aperture()
+        self.raw = self.generate_los_map()
+        
+        self.data = self.create_masked_image(self.raw, self.mask)
         if self.fwhm_arcsec is not None:
             self.data = self.convolve_fwhm()
 
@@ -81,15 +82,19 @@ class VelocityMap:
         Returns:
             array-like: Boolean mask marking pixels within the aperture.
         """
-        w, h = self.data.shape
-        center = (int(w / 2), int(h / 2))
-        radius = self.aperture_radius / self.kpc_per_arcsec / self.pixel_scale_arcsec
+        if self.aperture_radius is not None:
+            w, h = self.npixels, self.npixels
+            center = (int(w / 2), int(h / 2))
+            radius = self.aperture_radius / self.kpc_per_arcsec / self.pixel_scale_arcsec
 
-        Y, X = np.ogrid[:h, :w]
-        dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
+            Y, X = np.ogrid[:h, :w]
+            dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
 
-        mask = dist_from_center <= radius
+            mask = dist_from_center <= radius
+        else:
+            mask = np.ones_like((self.npixels, self.npixels))
         return mask
+
 
     def generate_los_map(self):
         """Creates line-of-sight velocity map from self.particles.
@@ -107,8 +112,11 @@ class VelocityMap:
             resolution=self.npixels,
             noplot=True,
             show_cbar=False,
-        )[::-1, :]
-        return np.ma.masked_array(im)
+        )
+        return im
+
+    def create_masked_image(self, im, mask):
+        return np.ma.masked_array(im[::-1, :], mask=mask)
 
     def convolve_fwhm(self):
         """Convolve a observational PSF with full width half max of self.fwhm_arcsec.
@@ -119,4 +127,4 @@ class VelocityMap:
         sigma_arcsec = self.fwhm_arcsec * gaussian_fwhm_to_sigma
         sigma_pixels = sigma_arcsec / self.pixel_scale_arcsec
         im = gaussian_filter(self.data.data * self.data.mask, sigma=sigma_pixels)
-        return np.ma.masked_array(im, mask=~self.data.mask)
+        return np.ma.masked_array(im, mask=self.data.mask)

@@ -3,7 +3,17 @@ import matplotlib.pyplot as plt
 from . import position_angles
 
 
-def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, ax=None, norm=None, **kwargs):
+def plot_map(
+    vel_map,
+    cmap="PuOr",
+    vmin=None,
+    vmax=None,
+    ax=None,
+    norm=None,
+    title=None,
+    ax_labels=True,
+    **kwargs
+):
     """Plot velocity map with reasonable defaults.
 
     Args:
@@ -12,7 +22,9 @@ def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, ax=None, norm=None, **k
         vmin (float, optional): Minimum (toward) velocity. Setting to None will automatically calculate limit. Defaults to None.
         vmax (float, optional): Maximum (away) velocity. Setting to None will automatically calculate limit. Defaults to None.
         ax (matplotlib.axes.Axes, optional): Matplotlib axes object in which to plot velocity map. Setting to None will generate a new Axes object. Defaults to None.
-
+        norm (matplotlib.colors.Normalize, optional): Matplotlib color norm object. Setting to None uses linear Normalize. Defaults to None.
+        title (str, optional): Add title to figure. Defaults to None.
+        ax_labels (bool, optional): Include axis labels in image units. Defaults to True.
     Returns:
         matplotlib.axes.Axes: Matplotlib axes object used to plot.
     """
@@ -20,13 +32,17 @@ def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, ax=None, norm=None, **k
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=(4, 4))
 
-    width = vel_map.data.shape[0]
     if norm is None:
         norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+
+    width = vel_map.image_width_kpc
+
     cmap = plt.cm.get_cmap(cmap)
 
+    im = vel_map.data.data * vel_map.data.mask
+
     ax.imshow(
-        vel_map.data,
+        im,
         extent=(-width / 2, width / 2, -width / 2, width / 2),
         vmin=vmin,
         vmax=vmax,
@@ -34,9 +50,14 @@ def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, ax=None, norm=None, **k
         norm=norm,
         **kwargs
     )
-    #u_st = sim['pos'].units.latex()
-    #ax.set_xlabel("$x/%s$" % u_st)
-    #ax.set_ylabel("$y/%s$" % u_st)
+
+    if title is not None:
+        ax.set_title(title)
+
+    if ax_labels:
+        u_st = vel_map.particles["pos"].units.latex()
+        ax.set_xlabel("$x/%s$" % u_st)
+        ax.set_ylabel("$y/%s$" % u_st)
 
     return ax
 
@@ -97,19 +118,18 @@ def plot_pa(velmap, pa, ax):
     return ax
 
 
-def plot_scalebar(scalebar_size, kpc_per_pixel, ax, **kwargs):
+def plot_scalebar(scalebar_size, ax, **kwargs):
     """Add scalebar to axes.
 
     Args:
         scalebar_size (float): Physical size of scalebar in kpc.
-        kpc_per_pixel (float): Physical size per pixel of the image.
         ax (matplotlib.axes.Axes): Matplotlib axes object.
     """
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 
     scalebar = AnchoredSizeBar(
         ax.transData,
-        scalebar_size / kpc_per_pixel,
+        scalebar_size,
         "{} kpc".format(scalebar_size),
         "lower right",
         pad=0.5,
@@ -120,3 +140,14 @@ def plot_scalebar(scalebar_size, kpc_per_pixel, ax, **kwargs):
         **kwargs
     )
     ax.add_artist(scalebar)
+
+
+def plot_colorbar(ax, units=False, **kwargs):
+    if units:
+        if units.latex() == "":
+            units = ""
+        else:
+            units = "$" + units.latex() + "$"
+    for im in ax.get_images():
+        ax.get_figure().colorbar(im, ax=ax, **kwargs).set_label("vz/" + units)
+    return ax
