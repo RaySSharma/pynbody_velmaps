@@ -1,10 +1,9 @@
 import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 from . import position_angles
 
 
-def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, scalebar_size=5, ax=None):
+def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, ax=None, norm=None, **kwargs):
     """Plot velocity map with reasonable defaults.
 
     Args:
@@ -12,20 +11,18 @@ def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, scalebar_size=5, ax=Non
         cmap (str, optional): Colormap of output image. Defaults to "PuOr".
         vmin (float, optional): Minimum (toward) velocity. Setting to None will automatically calculate limit. Defaults to None.
         vmax (float, optional): Maximum (away) velocity. Setting to None will automatically calculate limit. Defaults to None.
-        scalebar_size (float, optional): Physical size of scale bar in kpc. Defaults to 5.
         ax (matplotlib.axes.Axes, optional): Matplotlib axes object in which to plot velocity map. Setting to None will generate a new Axes object. Defaults to None.
 
     Returns:
         matplotlib.axes.Axes: Matplotlib axes object used to plot.
     """
-    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=(4, 4))
 
-    kpc_per_pixel = vel_map.image_width_kpc / vel_map.npixels
     width = vel_map.data.shape[0]
-    norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+    if norm is None:
+        norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
     cmap = plt.cm.get_cmap(cmap)
 
     ax.imshow(
@@ -35,24 +32,12 @@ def plot_map(vel_map, cmap="PuOr", vmin=None, vmax=None, scalebar_size=5, ax=Non
         vmax=vmax,
         cmap=cmap,
         norm=norm,
+        **kwargs
     )
+    #u_st = sim['pos'].units.latex()
+    #ax.set_xlabel("$x/%s$" % u_st)
+    #ax.set_ylabel("$y/%s$" % u_st)
 
-    fontprops = fm.FontProperties(size=14, family="monospace")
-    scalebar = AnchoredSizeBar(
-        ax.transData,
-        scalebar_size / kpc_per_pixel,
-        "{} kpc".format(scalebar_size),
-        "lower right",
-        pad=0.5,
-        color="black",
-        frameon=False,
-        size_vertical=0.5,
-        sep=10,
-        fontproperties=fontprops,
-    )
-
-    ax.add_artist(scalebar)
-    ax.tick_params(axis="both", which="both", width=0, labelsize=0)
     return ax
 
 
@@ -110,3 +95,28 @@ def plot_pa(velmap, pa, ax):
         -rad * np.sin(ang), rad * np.cos(ang), color="limegreen", linewidth=3
     )  # Major axis PA
     return ax
+
+
+def plot_scalebar(scalebar_size, kpc_per_pixel, ax, **kwargs):
+    """Add scalebar to axes.
+
+    Args:
+        scalebar_size (float): Physical size of scalebar in kpc.
+        kpc_per_pixel (float): Physical size per pixel of the image.
+        ax (matplotlib.axes.Axes): Matplotlib axes object.
+    """
+    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+
+    scalebar = AnchoredSizeBar(
+        ax.transData,
+        scalebar_size / kpc_per_pixel,
+        "{} kpc".format(scalebar_size),
+        "lower right",
+        pad=0.5,
+        color="black",
+        frameon=False,
+        size_vertical=0.5,
+        sep=10,
+        **kwargs
+    )
+    ax.add_artist(scalebar)

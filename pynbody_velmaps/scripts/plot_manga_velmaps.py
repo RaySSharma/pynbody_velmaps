@@ -41,6 +41,8 @@ def calc_half_mass_radius(gal, ndim=2):
 
 
 def plot_star_map(filename, redshift, image_width=20, orientation="sideon", ax=None):
+    import matplotlib.font_manager as fm
+
     halo_families = load.load_halo_families(filename, orientation=orientation)
     half_mass_r = calc_half_mass_radius(halo_families["star"])
     bh_xy = halo_families["bh"]["pos"][:, :2]
@@ -59,15 +61,18 @@ def plot_star_map(filename, redshift, image_width=20, orientation="sideon", ax=N
         cmap="PuOr",
         vmin=None,
         vmax=None,
-        scalebar_size=5,
         ax=ax,
     )
     plot.plot_bh(bh_xy / vel_map.kpc_per_pixel, ax)
     plot.plot_aperture(1.5 * half_mass_r / vel_map.kpc_per_pixel, ax)
+    plot.plot_scalebar(5, vel_map.kpc_per_pixel, ax, fontproperties = fm.FontProperties(size=14, family="monospace"))
+    #ax.tick_params(axis="both", which="both", width=0, labelsize=0)
     return vel_map, ax
 
 
 def plot_gas_map(filename, redshift, image_width=20, orientation="sideon", ax=None):
+    import matplotlib.font_manager as fm
+
     halo_families = load.load_halo_families(filename, orientation=orientation)
     half_mass_r = calc_half_mass_radius(halo_families["star"])
     bh_xy = halo_families["bh"]["pos"][:, :2]
@@ -91,6 +96,8 @@ def plot_gas_map(filename, redshift, image_width=20, orientation="sideon", ax=No
     )
     plot.plot_bh(bh_xy / vel_map.kpc_per_pixel, ax)
     plot.plot_aperture(1.5 * half_mass_r / vel_map.kpc_per_pixel, ax)
+    plot.plot_scalebar(5, vel_map.kpc_per_pixel, ax, fontproperties = fm.FontProperties(size=14, family="monospace"))
+    ax.tick_params(axis="both", which="both", width=0, labelsize=0)
     return vel_map, ax
 
 
