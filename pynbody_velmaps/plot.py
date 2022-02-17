@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from . import position_angles
@@ -69,15 +70,11 @@ def plot_aperture(aperture, ax, cen=(0, 0)):
         aperture (float): Radius of aperture in pixels.
         ax (matplotlib.axes.Axes): Matplotlib axes object.
         cen (tuple, optional): Location of aperture center, in pixels. Defaults to (0, 0).
-
-    Returns:
-        matplotlib.axes.Axes: Matplotlib axes object.
     """
     aperture_outline = plt.Circle(
         cen, aperture, color="k", fill=False, linestyle="--", lw=3
     )
     ax.add_patch(aperture_outline)
-    return ax
 
 
 def plot_bh(bh_xy, ax):
@@ -86,13 +83,9 @@ def plot_bh(bh_xy, ax):
     Args:
         bh_xy (array-like): Length N array containing (x,y) coordinates of black holes, in pixel coordinates.
         ax (matplotlib.axes.Axes): Matplotlib axes object.
-
-    Returns:
-        matplotlib.axes.Axes: Matplotlib axes object
     """
     for (bh_x, bh_y) in bh_xy:
         ax.plot(bh_x, bh_y, color="k", marker="o", ls="none")
-    return ax
 
 
 def plot_pa(velmap, pa, ax):
@@ -103,8 +96,6 @@ def plot_pa(velmap, pa, ax):
         pa (tuple): Position angle tuple output by pafit.fit_kinematic_pa()
         ax (matplotlib.axes.Axes): Matplotlib axes object.
     """
-    import numpy as np
-
     angBest, angErr, vSyst = pa
     x, y = position_angles.infer_coordinates(velmap)
     rad = np.sqrt(np.max(x ** 2 + y ** 2))
@@ -115,7 +106,6 @@ def plot_pa(velmap, pa, ax):
     ax.plot(
         -rad * np.sin(ang), rad * np.cos(ang), color="limegreen", linewidth=3
     )  # Major axis PA
-    return ax
 
 
 def plot_scalebar(scalebar_size, ax, **kwargs):
@@ -142,12 +132,19 @@ def plot_scalebar(scalebar_size, ax, **kwargs):
     ax.add_artist(scalebar)
 
 
-def plot_colorbar(ax, units=False, **kwargs):
-    if units:
+def plot_colorbar(ax, units=None, **kwargs):
+    """Add colorbar to axes
+
+    Args:
+        ax (matplotlib.axes.Axes): Matplotlib axes object.
+        units (pynbody.units.Unit, optional): Adds a label to colorbar axis, using units implied from Unit object. Defaults to None.
+    """
+    for im in ax.get_images():
+        cb = ax.get_figure().colorbar(im, ax=ax, **kwargs)
+    
+    if units is not None:
         if units.latex() == "":
             units = ""
         else:
             units = "$" + units.latex() + "$"
-    for im in ax.get_images():
-        ax.get_figure().colorbar(im, ax=ax, **kwargs).set_label("vz/" + units)
-    return ax
+        cb.set_label("vz/" + units)
