@@ -42,10 +42,8 @@ def plot_map(
 
     cmap = plt.cm.get_cmap(cmap)
 
-    im = vel_map.data.data * vel_map.data.mask
-
     ims = ax.imshow(
-        im,
+        vel_map.vel_map,
         extent=(-width / 2, width / 2, -width / 2, width / 2),
         vmin=vmin,
         vmax=vmax,

@@ -46,6 +46,8 @@ class VelocityMap:
         self.data = self.create_masked_image(self.raw, self.mask)
         if self.fwhm_arcsec is not None:
             self.data = self.convolve_fwhm()
+        
+        self.vel_map = self.data.data * self.data.mask
 
     def calc_npixels(self, image_width_kpc, pixel_scale_arcsec):
         """Converts image width and pixel scale to an image width in pixels.
