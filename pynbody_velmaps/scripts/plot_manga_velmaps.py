@@ -29,6 +29,17 @@ def parse_args():
     )
     return parser.parse_args()
 
+def assign_args():
+    args = parse_args()
+    filename = args.simulation.as_posix()
+    out_filename = args.outfile
+    if args.redshift == 0:
+        redshift = 0.03
+    else:
+        redshift = args.redshift
+    image_width = args.image_width
+    return filename, redshift, image_width, out_filename
+
 
 def calc_half_mass_radius(gal, ndim=2):
     bins = np.arange(0.5, gal["r"].max(), 0.1)
@@ -41,7 +52,7 @@ def calc_half_mass_radius(gal, ndim=2):
 def plot_manga_map(
     filename,
     redshift,
-    particles='star',
+    particles="star",
     image_width=20,
     orientation="sideon",
     ax=None,
@@ -78,33 +89,33 @@ def plot_manga_map(
     plot.plot_bh(bh_xy, ax)
     plot.plot_aperture(1.5 * half_mass_r, ax)
     plot.plot_scalebar(5, ax, size_vertical=0.1, pad=0.5, sep=10)
+    plot.plot_pa(vel_map, ax)
     return vel_map, ax
 
 
 if __name__ == "__main__":
     """Example usage: >python plot_manga_velmaps.py /path/to/simulation.tipsy 0.05 20 /path/to/output/image.png"""
-    args = parse_args()
-    filename = args.simulation.as_posix()
-    out_filename = args.outfile
-    if args.redshift == 0:
-        redshift = 0.03
-    else:
-        redshift = args.redshift
-    image_width = args.image_width
+    filename, redshift, image_width, out_filename = assign_args()
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     star_map, _ = plot_manga_map(
-        filename, redshift, 'star', image_width, orientation="sideon", ax=ax[0]
+        filename,
+        redshift,
+        "star",
+        image_width,
+        orientation="sideon",
+        ax=ax[0],
+        cmap="PuOr",
     )
     gas_map, _ = plot_manga_map(
-        filename, redshift, 'gas', image_width, orientation="sideon", ax=ax[1]
+        filename,
+        redshift,
+        "gas",
+        image_width,
+        orientation="sideon",
+        ax=ax[1],
+        cmap="RdBu",
     )
-
-    star_pa = position_angles.calc_pa(star_map.data.data * star_map.data.mask)
-    gas_pa = position_angles.calc_pa(gas_map.data.data * gas_map.data.mask)
-
-    plot.plot_pa(star_map, star_pa, ax[0])
-    plot.plot_pa(gas_map, gas_pa, ax[1])
 
     ax[0].tick_params(axis="both", which="both", width=0, labelsize=0)
     ax[1].tick_params(axis="both", which="both", width=0, labelsize=0)

@@ -19,7 +19,7 @@ def plot_map(
     """Plot velocity map with reasonable defaults.
 
     Args:
-        vel_map (array-like): Pixel-by-pixel velocity map.
+        vel_map (generate.VelocityMap): Velocity map object.
         cmap (str, optional): Colormap of output image. Defaults to "PuOr".
         vmin (float, optional): Minimum (toward) velocity. Setting to None will automatically calculate limit. Defaults to None.
         vmax (float, optional): Maximum (away) velocity. Setting to None will automatically calculate limit. Defaults to None.
@@ -75,6 +75,8 @@ def plot_map(
             units = "$" + units.latex() + "$"
         cb.set_label("vz/" + units)
 
+    ax.set_xlim(-width/2, width/2)
+    ax.set_ylim(-width/2, width/2)
     return ax
 
 
@@ -103,16 +105,15 @@ def plot_bh(coords, ax):
         ax.plot(x, y, color="k", marker="o", ls="none")
 
 
-def plot_pa(velmap, pa, ax):
+def plot_pa(vel_map, ax):
     """Plots a line for the position angle fit from pafit
 
     Args:
-        velmap (array-like): Pixel-by-pixel velocity map.
-        pa (tuple): Position angle tuple output by pafit.fit_kinematic_pa()
+        velmap (generate.VelocityMap): Velocity map object.
         ax (matplotlib.axes.Axes): Matplotlib axes object.
     """
-    angBest, angErr, vSyst = pa
-    x, y = position_angles.infer_coordinates(velmap)
+    angBest, angErr, vSyst = position_angles.calc_pa(vel_map)
+    x, y = position_angles.infer_coordinates(vel_map)
     rad = np.sqrt(np.max(x ** 2 + y ** 2))
     ang = [0, np.pi] + np.radians(angBest)
     ax.plot(
