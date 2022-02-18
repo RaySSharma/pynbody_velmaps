@@ -38,14 +38,16 @@ def calc_half_mass_radius(gal, ndim=2):
     return half_mass_r
 
 
-def plot_star_map(
+def plot_manga_map(
     filename,
     redshift,
+    particles='star',
     image_width=20,
     orientation="sideon",
     ax=None,
     vmin=None,
     vmax=None,
+    cmap="PuOr",
     title=None,
     ax_labels=True,
     show_cbar=True,
@@ -55,7 +57,7 @@ def plot_star_map(
     bh_xy = halo_families["bh"]["pos"][:, :2]
 
     vel_map = generate.VelocityMap(
-        halo_families["star"],
+        halo_families[particles],
         z=redshift,
         cosmo=Planck13,
         image_width_kpc=image_width,
@@ -65,52 +67,13 @@ def plot_star_map(
     )
     ax = plot.plot_map(
         vel_map,
-        cmap="PuOr",
+        cmap=cmap,
         vmin=vmin,
         vmax=vmax,
         ax=ax,
         title=title,
         ax_labels=ax_labels,
         show_cbar=show_cbar,
-    )
-    plot.plot_bh(bh_xy, ax)
-    plot.plot_aperture(1.5 * half_mass_r, ax)
-    plot.plot_scalebar(5, ax, size_vertical=0.1, pad=0.5, sep=10)
-    return vel_map, ax
-
-
-def plot_gas_map(
-    filename,
-    redshift,
-    image_width=20,
-    orientation="sideon",
-    ax=None,
-    title=None,
-    ax_labels=True,
-    show_cbar=True,
-):
-    halo_families = load.load_halo_families(filename, orientation=orientation)
-    half_mass_r = calc_half_mass_radius(halo_families["star"])
-    bh_xy = halo_families["bh"]["pos"][:, :2]
-
-    vel_map = generate.VelocityMap(
-        halo_families["gas"],
-        z=redshift,
-        cosmo=Planck13,
-        image_width_kpc=image_width,
-        aperture_kpc=1.5 * half_mass_r,
-        pixel_scale_arcsec=0.5,
-        fwhm_arcsec=2.5,
-    )
-    ax = plot.plot_map(
-        vel_map,
-        cmap="RdBu",
-        vmin=None,
-        vmax=None,
-        ax=ax,
-        title=title,
-        ax_labels=ax_labels,
-        show_cbar=show_cbar
     )
     plot.plot_bh(bh_xy, ax)
     plot.plot_aperture(1.5 * half_mass_r, ax)
@@ -130,11 +93,11 @@ if __name__ == "__main__":
     image_width = args.image_width
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
-    star_map, _ = plot_star_map(
-        filename, redshift, image_width, orientation="sideon", ax=ax[0]
+    star_map, _ = plot_manga_map(
+        filename, redshift, 'star', image_width, orientation="sideon", ax=ax[0]
     )
-    gas_map, _ = plot_gas_map(
-        filename, redshift, image_width, orientation="sideon", ax=ax[1]
+    gas_map, _ = plot_manga_map(
+        filename, redshift, 'gas', image_width, orientation="sideon", ax=ax[1]
     )
 
     star_pa = position_angles.calc_pa(star_map.data.data * star_map.data.mask)
