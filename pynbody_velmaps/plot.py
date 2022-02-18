@@ -13,6 +13,7 @@ def plot_map(
     norm=None,
     title=None,
     ax_labels=True,
+    show_cbar=True,
     **kwargs
 ):
     """Plot velocity map with reasonable defaults.
@@ -25,7 +26,8 @@ def plot_map(
         ax (matplotlib.axes.Axes, optional): Matplotlib axes object in which to plot velocity map. Setting to None will generate a new Axes object. Defaults to None.
         norm (matplotlib.colors.Normalize, optional): Matplotlib color norm object. Setting to None uses linear Normalize. Defaults to None.
         title (str, optional): Add title to figure. Defaults to None.
-        ax_labels (bool, optional): Include axis labels in image units. Defaults to True.
+        ax_labels (bool, optional): Include axis labels in kpc. Defaults to True.
+        show_cbar (bool, optional): Add colorbar. Defaults to True.
     Returns:
         matplotlib.axes.Axes: Matplotlib axes object used to plot.
     """
@@ -42,7 +44,7 @@ def plot_map(
 
     im = vel_map.data.data * vel_map.data.mask
 
-    ax.imshow(
+    ims = ax.imshow(
         im,
         extent=(-width / 2, width / 2, -width / 2, width / 2),
         vmin=vmin,
@@ -59,6 +61,19 @@ def plot_map(
         u_st = vel_map.particles["pos"].units.latex()
         ax.set_xlabel("$x/%s$" % u_st)
         ax.set_ylabel("$y/%s$" % u_st)
+
+    if show_cbar:
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        cb = ax.get_figure().colorbar(ims, cax=cax, **kwargs)
+        units = vel_map.raw.units
+        if units.latex() == "":
+            units = ""
+        else:
+            units = "$" + units.latex() + "$"
+        cb.set_label("vz/" + units)
 
     return ax
 
@@ -77,15 +92,15 @@ def plot_aperture(aperture, ax, cen=(0, 0)):
     ax.add_patch(aperture_outline)
 
 
-def plot_bh(bh_xy, ax):
+def plot_bh(coords, ax):
     """Plot locations of black holes with black dots.
 
     Args:
-        bh_xy (array-like): Length N array containing (x,y) coordinates of black holes, in pixel coordinates.
+        coords (array-like): Size (N,2) array containing (x,y) coordinates of black holes, in kpc.
         ax (matplotlib.axes.Axes): Matplotlib axes object.
     """
-    for (bh_x, bh_y) in bh_xy:
-        ax.plot(bh_x, bh_y, color="k", marker="o", ls="none")
+    for (x, y) in coords:
+        ax.plot(x, y, color="k", marker="o", ls="none")
 
 
 def plot_pa(velmap, pa, ax):
@@ -122,29 +137,8 @@ def plot_scalebar(scalebar_size, ax, **kwargs):
         scalebar_size,
         "{} kpc".format(scalebar_size),
         "lower right",
-        pad=0.5,
         color="black",
         frameon=False,
-        size_vertical=0.5,
-        sep=10,
         **kwargs
     )
     ax.add_artist(scalebar)
-
-
-def plot_colorbar(ax, units=None, **kwargs):
-    """Add colorbar to axes
-
-    Args:
-        ax (matplotlib.axes.Axes): Matplotlib axes object.
-        units (pynbody.units.Unit, optional): Adds a label to colorbar axis, using units implied from Unit object. Defaults to None.
-    """
-    for im in ax.get_images():
-        cb = ax.get_figure().colorbar(im, ax=ax, **kwargs)
-    
-    if units is not None:
-        if units.latex() == "":
-            units = ""
-        else:
-            units = "$" + units.latex() + "$"
-        cb.set_label("vz/" + units)

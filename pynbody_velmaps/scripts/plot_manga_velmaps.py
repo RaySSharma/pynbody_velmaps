@@ -48,6 +48,7 @@ def plot_star_map(
     vmax=None,
     title=None,
     ax_labels=True,
+    show_cbar=True,
 ):
     halo_families = load.load_halo_families(filename, orientation=orientation)
     half_mass_r = calc_half_mass_radius(halo_families["star"])
@@ -58,7 +59,7 @@ def plot_star_map(
         z=redshift,
         cosmo=Planck13,
         image_width_kpc=image_width,
-        aperture_kpc=2 * half_mass_r,
+        aperture_kpc=1.5 * half_mass_r,
         pixel_scale_arcsec=0.5,
         fwhm_arcsec=2.5,
     )
@@ -70,11 +71,11 @@ def plot_star_map(
         ax=ax,
         title=title,
         ax_labels=ax_labels,
+        show_cbar=show_cbar,
     )
     plot.plot_bh(bh_xy, ax)
     plot.plot_aperture(1.5 * half_mass_r, ax)
-    plot.plot_scalebar(5, ax)
-    plot.plot_colorbar(ax, units=vel_map.raw.units)
+    plot.plot_scalebar(5, ax, size_vertical=0.1, pad=0.5, sep=10)
     return vel_map, ax
 
 
@@ -86,6 +87,7 @@ def plot_gas_map(
     ax=None,
     title=None,
     ax_labels=True,
+    show_cbar=True,
 ):
     halo_families = load.load_halo_families(filename, orientation=orientation)
     half_mass_r = calc_half_mass_radius(halo_families["star"])
@@ -96,7 +98,7 @@ def plot_gas_map(
         z=redshift,
         cosmo=Planck13,
         image_width_kpc=image_width,
-        aperture_kpc=2 * half_mass_r,
+        aperture_kpc=1.5 * half_mass_r,
         pixel_scale_arcsec=0.5,
         fwhm_arcsec=2.5,
     )
@@ -108,11 +110,11 @@ def plot_gas_map(
         ax=ax,
         title=title,
         ax_labels=ax_labels,
+        show_cbar=show_cbar
     )
     plot.plot_bh(bh_xy, ax)
     plot.plot_aperture(1.5 * half_mass_r, ax)
-    plot.plot_scalebar(5, ax)
-    plot.plot_colorbar(ax, units=vel_map.raw.units)
+    plot.plot_scalebar(5, ax, size_vertical=0.1, pad=0.5, sep=10)
     return vel_map, ax
 
 
