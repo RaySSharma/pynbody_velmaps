@@ -102,11 +102,10 @@ class VelocityMap:
         self.mask = self.mask_aperture()
         self.raw = self.generate_los_map()
 
-        self.data = self.create_masked_image(self.raw, self.mask)
+        self.data = np.asarray(self.raw)
+
         if self.fwhm_arcsec is not None:
             self.data = self.convolve_fwhm()
-
-        self.vel_map = self.data.data * self.data.mask
 
     def calc_npixels(self, image_width_kpc, pixel_scale_arcsec):
         """Converts image width and pixel scale to an image width in pixels.
@@ -195,5 +194,5 @@ class VelocityMap:
         """
         sigma_arcsec = self.fwhm_arcsec * gaussian_fwhm_to_sigma
         sigma_pixels = sigma_arcsec / self.pixel_scale_arcsec
-        im = gaussian_filter(self.data.data * self.data.mask, sigma=sigma_pixels)
-        return np.ma.masked_array(im, mask=self.data.mask)
+        im = gaussian_filter(self.data.data, sigma=sigma_pixels)
+        return im

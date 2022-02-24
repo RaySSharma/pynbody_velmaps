@@ -43,7 +43,7 @@ def plot_map(
     cmap = plt.cm.get_cmap(cmap)
 
     ims = ax.imshow(
-        vel_map.vel_map,
+        vel_map.data,
         extent=(-width / 2, width / 2, -width / 2, width / 2),
         vmin=vmin,
         vmax=vmax,

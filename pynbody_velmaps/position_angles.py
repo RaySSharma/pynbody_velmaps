@@ -10,5 +10,5 @@ def infer_coordinates(vel_map):
 
 def calc_pa(vel_map, **kwargs):
     x, y = infer_coordinates(vel_map)
-    pa = fit_kinematic_pa.fit_kinematic_pa(x, y, vel_map.vel_map, plot=False, **kwargs)
+    pa = fit_kinematic_pa.fit_kinematic_pa(x, y, vel_map.data * vel_map.mask, plot=False, **kwargs)
     return pa

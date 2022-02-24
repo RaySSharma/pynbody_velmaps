@@ -9,38 +9,6 @@ from astropy.cosmology import Planck13
 from pynbody_velmaps import generate, plot, load, position_angles
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("simulation", help="Path to simulation.", type=pathlib.Path)
-    parser.add_argument(
-        "redshift", help="Redshift at which to generate image.", type=float
-    )
-    parser.add_argument(
-        "image_width",
-        help="Physical size of output image, in kpc.",
-        type=float,
-    )
-    parser.add_argument(
-        "outfile",
-        nargs="?",
-        help="Output image name",
-        type=pathlib.Path,
-        default=None,
-    )
-    return parser.parse_args()
-
-def assign_args():
-    args = parse_args()
-    filename = args.simulation.as_posix()
-    out_filename = args.outfile
-    if args.redshift == 0:
-        redshift = 0.03
-    else:
-        redshift = args.redshift
-    image_width = args.image_width
-    return filename, redshift, image_width, out_filename
-
-
 def calc_half_mass_radius(gal, ndim=2):
     bins = np.arange(0.5, gal["r"].max(), 0.1)
     pro = pynbody.analysis.profile.Profile(gal, ndim=ndim, bins=bins)
@@ -53,6 +21,7 @@ def plot_manga_map(
     filename,
     redshift,
     particles="star",
+    weights="mass",
     image_width=20,
     orientation="sideon",
     ax=None,
@@ -64,6 +33,18 @@ def plot_manga_map(
     show_cbar=True,
 ):
     halo_families = load.load_halo_families(filename, orientation=orientation)
+
+    if isinstance(weights, str):
+        halo_families[particles]["map_weights"] = halo_families[particles][weights]
+    elif callable(weights):
+        halo_families[particles]["map_weights"] = weights(halo_families[particles])
+    else:
+        halo_families[particles]["map_weights"] = np.ones(len(halo_families[particles]))
+
+    halo_families[particles]["map_qty"] = (
+        halo_families[particles]["vz"] * halo_families[particles]["map_weights"]
+    )
+
     half_mass_r = calc_half_mass_radius(halo_families["star"])
     bh_xy = halo_families["bh"]["pos"][:, :2]
 
@@ -74,7 +55,8 @@ def plot_manga_map(
         image_width_kpc=image_width,
         aperture_kpc=1.5 * half_mass_r,
         pixel_scale_arcsec=0.5,
-        fwhm_arcsec=2.5,
+        fwhm_arcsec=None,
+        halo_max_size=2.5 * half_mass_r,
     )
     ax = plot.plot_map(
         vel_map,
@@ -95,14 +77,51 @@ def plot_manga_map(
 
 if __name__ == "__main__":
     """Example usage: >python plot_manga_velmaps.py /path/to/simulation.tipsy 0.05 20 /path/to/output/image.png"""
+
+    def parse_args():
+        parser = argparse.ArgumentParser()
+        parser.add_argument("simulation", help="Path to simulation.", type=pathlib.Path)
+        parser.add_argument(
+            "redshift", help="Redshift at which to generate image.", type=float
+        )
+        parser.add_argument(
+            "image_width",
+            help="Physical size of output image, in kpc.",
+            type=float,
+        )
+        parser.add_argument(
+            "outfile",
+            nargs="?",
+            help="Output image name",
+            type=pathlib.Path,
+            default=None,
+        )
+        return parser.parse_args()
+
+    def assign_args():
+        args = parse_args()
+        filename = args.simulation.as_posix()
+        out_filename = args.outfile
+        if args.redshift == 0:
+            redshift = 0.03
+        else:
+            redshift = args.redshift
+        image_width = args.image_width
+        return filename, redshift, image_width, out_filename
+
     filename, redshift, image_width, out_filename = assign_args()
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    def rho_sq(gas):
+        return gas["rho"] ** 2
+
     star_map, _ = plot_manga_map(
         filename,
         redshift,
-        "star",
-        image_width,
+        particles="star",
+        weights="mass",
+        image_width=image_width,
         orientation="sideon",
         ax=ax[0],
         cmap="PuOr",
@@ -110,8 +129,9 @@ if __name__ == "__main__":
     gas_map, _ = plot_manga_map(
         filename,
         redshift,
-        "gas",
-        image_width,
+        particles="gas",
+        weights=rho_sq,
+        image_width=image_width,
         orientation="sideon",
         ax=ax[1],
         cmap="RdBu",
