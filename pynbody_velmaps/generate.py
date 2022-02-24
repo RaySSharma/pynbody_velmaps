@@ -7,6 +7,59 @@ from scipy.ndimage import gaussian_filter
 from astropy.stats import gaussian_fwhm_to_sigma
 
 
+class Aperture(pynbody.filt.Filter):
+
+    """
+    Return particles that are within an x-y aperture with `radius', centered on the point `cen`.
+
+    Inputs:
+    -------
+    *radius* : extent of the aperture. Can be a number or a string specifying the units.
+    *cen* : center of the aperture, in (x, y). default = (0,0)
+    """
+
+    def __init__(self, radius, cen=(0, 0)):
+        self._descriptor = "aperture"
+        self.cen = np.asarray(cen)
+        if self.cen.shape != (2,):
+            raise ValueError("Centre must be length 2 array")
+
+        if isinstance(radius, str):
+            radius = pynbody.units.Unit(radius)
+
+        self.radius = radius
+
+    def __call__(self, sim):
+        radius = self.radius
+        wrap = -1.0
+
+        with sim.immediate_mode:
+            pos = sim["pos"]
+
+        if pynbody.units.is_unit_like(radius):
+            radius = float(radius.in_units(pos.units, **pos.conversion_context()))
+
+        if "boxsize" in sim.properties:
+            wrap = sim.properties["boxsize"]
+
+        if pynbody.units.is_unit_like(wrap):
+            wrap = float(wrap.in_units(pos.units, **pos.conversion_context()))
+
+        cen = self.cen
+        if pynbody.units.has_units(cen):
+            cen = cen.in_units(pos.units)
+
+        distance = ((sim["pos"][:, :2] - self.cen) ** 2).sum(axis=1)
+        return distance < radius ** 2
+
+    def __repr__(self):
+        if pynbody.units.is_unit(self.radius):
+
+            return "Aperture('%s', %s)" % (str(self.radius), repr(self.cen))
+        else:
+            return "Aperture(%.2e, %s)" % (self.radius, repr(self.cen))
+
+
 class VelocityMap:
     def __init__(
         self,
@@ -17,6 +70,7 @@ class VelocityMap:
         aperture_kpc,
         pixel_scale_arcsec=0.05,
         fwhm_arcsec=None,
+        halo_max_size=None,
     ):
         """Generates a velocity map for the particles in `halo`, following the prescription in Koudmani et al (2021). Defaults chosen to match the MANGA survey.
 
@@ -35,18 +89,23 @@ class VelocityMap:
         self.fwhm_arcsec = fwhm_arcsec
         self.aperture_radius = aperture_kpc
 
+        if halo_max_size is None:
+            self.halo_max_size = aperture_kpc
+        else:
+            self.halo_max_size = halo_max_size
+
         self.kpc_per_arcsec = cosmo.kpc_proper_per_arcmin(z).to("kpc arcsec**-1").value
         self.npixels = self.calc_npixels(self.image_width_kpc, self.pixel_scale_arcsec)
         self.kpc_per_pixel = self.image_width_kpc / self.npixels
 
-        self.particles = self.restrict_to_aperture(halo)
+        self.particles = self.restrict_halo(halo)
         self.mask = self.mask_aperture()
         self.raw = self.generate_los_map()
-        
+
         self.data = self.create_masked_image(self.raw, self.mask)
         if self.fwhm_arcsec is not None:
             self.data = self.convolve_fwhm()
-        
+
         self.vel_map = self.data.data * self.data.mask
 
     def calc_npixels(self, image_width_kpc, pixel_scale_arcsec):
@@ -63,7 +122,7 @@ class VelocityMap:
         npixels = int(image_width_arcsec / pixel_scale_arcsec)
         return npixels
 
-    def restrict_to_aperture(self, halo):
+    def restrict_halo(self, halo):
         """Restricts halo to a 3d radius from the center.
 
         Args:
@@ -72,11 +131,8 @@ class VelocityMap:
         Returns:
             pynbody.snapshot.SimSnap: Cropped halo object.
         """
-        if self.aperture_radius is not None:
-            inside_aperture = pynbody.filt.Sphere(self.aperture_radius, cen=(0,0,0))
-            return halo[inside_aperture]
-        else:
-            return halo
+        inside_aperture = Aperture(self.halo_max_size, cen=(0, 0))
+        return halo[inside_aperture]
 
     def mask_aperture(self):
         """Mask data outside the aperture.
@@ -87,16 +143,17 @@ class VelocityMap:
         if self.aperture_radius is not None:
             w, h = self.npixels, self.npixels
             center = (int(w / 2), int(h / 2))
-            radius = self.aperture_radius / self.kpc_per_arcsec / self.pixel_scale_arcsec
+            radius = (
+                self.aperture_radius / self.kpc_per_arcsec / self.pixel_scale_arcsec
+            )
 
             Y, X = np.ogrid[:h, :w]
             dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
 
             mask = dist_from_center <= radius
         else:
-            mask = np.ones_like((self.npixels, self.npixels))
+            mask = np.ones((self.npixels, self.npixels))
         return mask
-
 
     def generate_los_map(self):
         """Creates line-of-sight velocity map from self.particles.
@@ -106,16 +163,26 @@ class VelocityMap:
         """
         im = pynbody.plot.sph.image(
             self.particles,
-            qty="vz",
-            av_z="mass",
-            units="km s**-1",
+            qty="map_qty",
             log=False,
+            units=self.particles["map_qty"].units,
             width=self.image_width_kpc,
             resolution=self.npixels,
             noplot=True,
             show_cbar=False,
         )
-        return im
+        im2 = pynbody.plot.sph.image(
+            self.particles,
+            qty="map_weights",
+            log=False,
+            units=self.particles["map_weights"].units,
+            width=self.image_width_kpc,
+            resolution=self.npixels,
+            noplot=True,
+            show_cbar=False,
+        )
+        im = im / im2
+        return im.in_units("km s**-1")
 
     def create_masked_image(self, im, mask):
         return np.ma.masked_array(im[::-1, :], mask=mask)
