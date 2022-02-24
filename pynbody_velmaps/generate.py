@@ -79,9 +79,10 @@ class VelocityMap:
             z (float): Redshift of halo.
             cosmo (astropy.cosmology.core.FlatLambdaCDM): Astropy cosmology object for simulation cosmology.
             image_width_kpc (float): Width of final image in kpc.
-            aperture_kpc (float): Aperture radius in kpc within which to generate map. Typically 1.5 * effective radius.
+            aperture_kpc (float): Aperture radius in kpc within which to calculate position angles. Typically 1.5 * effective radius.
             pixel_scale_arcsec (float): Desired pixel scale of final image, in arcseconds. Defaults to 0.05".
             fwhm_arcsec (float): Desired FWHM of final image, in arcseconds. Skip FWHM by setting to `None`. Defaults to None.
+            halo_max_size (float): Aperture radius within which to limit the halo. Typically 2.5 * effective radius. Separate from aperture radius to allow smoothing of particles outside aperture. Setting to 'None' sets to aperture radius. Defaults to None.
         """
 
         self.pixel_scale_arcsec = pixel_scale_arcsec
@@ -181,6 +182,7 @@ class VelocityMap:
             show_cbar=False,
         )
         im = im / im2
+        im[~np.isfinite(im)] = 0
         return im.in_units("km s**-1")
 
     def create_masked_image(self, im, mask):
@@ -194,5 +196,5 @@ class VelocityMap:
         """
         sigma_arcsec = self.fwhm_arcsec * gaussian_fwhm_to_sigma
         sigma_pixels = sigma_arcsec / self.pixel_scale_arcsec
-        im = gaussian_filter(self.data.data, sigma=sigma_pixels)
+        im = gaussian_filter(self.data, sigma=sigma_pixels)
         return im

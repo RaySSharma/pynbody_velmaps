@@ -55,7 +55,7 @@ def plot_manga_map(
         image_width_kpc=image_width,
         aperture_kpc=1.5 * half_mass_r,
         pixel_scale_arcsec=0.5,
-        fwhm_arcsec=None,
+        fwhm_arcsec=2.5,
         halo_max_size=2.5 * half_mass_r,
     )
     ax = plot.plot_map(
@@ -71,8 +71,10 @@ def plot_manga_map(
     plot.plot_bh(bh_xy, ax)
     plot.plot_aperture(1.5 * half_mass_r, ax)
     plot.plot_scalebar(5, ax, size_vertical=0.1, pad=0.5, sep=10)
-    plot.plot_pa(vel_map, ax)
-    return vel_map, ax
+
+    pa = position_angles.calc_pa(vel_map)
+    plot.plot_pa(vel_map, pa, ax, fontsize='large')
+    return vel_map, pa, ax
 
 
 if __name__ == "__main__":
@@ -109,14 +111,14 @@ if __name__ == "__main__":
         image_width = args.image_width
         return filename, redshift, image_width, out_filename
 
+    def rho_sq(gas):
+        return gas["rho"] ** 2
+
     filename, redshift, image_width, out_filename = assign_args()
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    def rho_sq(gas):
-        return gas["rho"] ** 2
-
-    star_map, _ = plot_manga_map(
+    star_map, star_pa, _ = plot_manga_map(
         filename,
         redshift,
         particles="star",
@@ -125,8 +127,10 @@ if __name__ == "__main__":
         orientation="sideon",
         ax=ax[0],
         cmap="PuOr",
+        vmin=-50,
+        vmax=50,
     )
-    gas_map, _ = plot_manga_map(
+    gas_map, gas_pa, _ = plot_manga_map(
         filename,
         redshift,
         particles="gas",
@@ -135,10 +139,12 @@ if __name__ == "__main__":
         orientation="sideon",
         ax=ax[1],
         cmap="RdBu",
+        vmin=-100,
+        vmax=100,
     )
 
-    ax[0].tick_params(axis="both", which="both", width=0, labelsize=0)
-    ax[1].tick_params(axis="both", which="both", width=0, labelsize=0)
+    print('Star PA {} +/- {}'.format(star_pa[0], star_pa[1]))
+    print('Gas PA {} +/- {}'.format(gas_pa[0], gas_pa[1]))
 
     if out_filename is not None:
         fig.tight_layout()

@@ -45,8 +45,6 @@ def plot_map(
     ims = ax.imshow(
         vel_map.data,
         extent=(-width / 2, width / 2, -width / 2, width / 2),
-        vmin=vmin,
-        vmax=vmax,
         cmap=cmap,
         norm=norm,
         **kwargs
@@ -64,7 +62,7 @@ def plot_map(
         from mpl_toolkits.axes_grid1 import make_axes_locatable
 
         divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
         cb = ax.get_figure().colorbar(ims, cax=cax, **kwargs)
         units = vel_map.raw.units
         if units.latex() == "":
@@ -73,8 +71,8 @@ def plot_map(
             units = "$" + units.latex() + "$"
         cb.set_label("vz/" + units)
 
-    ax.set_xlim(-width/2, width/2)
-    ax.set_ylim(-width/2, width/2)
+    ax.set_xlim(-width / 2, width / 2)
+    ax.set_ylim(-width / 2, width / 2)
     return ax
 
 
@@ -103,23 +101,22 @@ def plot_bh(coords, ax):
         ax.plot(x, y, color="k", marker="o", ls="none")
 
 
-def plot_pa(vel_map, ax):
+def plot_pa(vel_map, pa, ax, **kwargs):
     """Plots a line for the position angle fit from pafit
 
     Args:
         velmap (generate.VelocityMap): Velocity map object.
         ax (matplotlib.axes.Axes): Matplotlib axes object.
     """
-    angBest, angErr, vSyst = position_angles.calc_pa(vel_map)
+    angBest, angErr, vSyst = pa
     x, y = position_angles.infer_coordinates(vel_map)
     rad = np.sqrt(np.max(x ** 2 + y ** 2))
     ang = [0, np.pi] + np.radians(angBest)
     ax.plot(
-        rad * np.cos(ang), rad * np.sin(ang), "k--", linewidth=3
-    )  # Zero-velocity line
-    ax.plot(
         -rad * np.sin(ang), rad * np.cos(ang), color="limegreen", linewidth=3
     )  # Major axis PA
+    pa_str = "PA = {:.0f}".format(angBest) + r"$^{\circ}$"
+    ax.text(0.05, 0.85, pa_str, transform=ax.transAxes, **kwargs)
 
 
 def plot_scalebar(scalebar_size, ax, **kwargs):
