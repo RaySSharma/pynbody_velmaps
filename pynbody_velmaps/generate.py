@@ -183,6 +183,7 @@ class VelocityMap:
         )
         im = im / im2
         im[~np.isfinite(im)] = 0
+        im = im[::-1, :]
         return im.in_units("km s**-1")
 
     def create_masked_image(self, im, mask):
