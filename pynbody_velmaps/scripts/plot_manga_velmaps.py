@@ -39,7 +39,7 @@ def plot_manga_map(
     elif callable(weights):
         halo_families[particles]["map_weights"] = weights(halo_families[particles])
     else:
-        halo_families[particles]["map_weights"] = np.ones(len(halo_families[particles]))
+        halo_families[particles]["map_weights"] = pynbody.array.SimArray(np.ones(len(halo_families[particles])), units='1')
 
     halo_families[particles]["map_qty"] = (
         halo_families[particles]["vz"] * halo_families[particles]["map_weights"]
